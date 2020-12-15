@@ -1,0 +1,24 @@
+version: '3'
+networks:
+  mynetwork:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+services:
+   sacod_reportgenerator:
+    image: 'tonyhernandezdelcid/sacod_reportgenerator:latest'
+    expose:
+      - '8080'
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - type: volume
+        source: sacod_reportgenerator
+        target: /var/lib/sacod_reportgenerator
+    extra_hosts:
+      - 'serverdb:192.168.11.6'
+    networks:
+      mynetwork:
+        ipv4_address: 172.20.0.4
+volumes:
+  sacod_reportgenerator:
+      

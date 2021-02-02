@@ -3,7 +3,9 @@ package com.guatex.sacod_reportgenerator;
 public class Rutas {
 	private static final String OS = System.getProperty("os.name").toLowerCase();
 	private static final String PATHLinux = "/var/lib/sacod_reportgenerator/SACOD_reportes";
-	private static final String PATHWin = "C:\\TEMPORAL\\ReportesSACOD";
+//	private static final String PATHWin = "C:\\TEMPORAL\\ReportesSACOD";
+	private static final String PATHWin = "\\\\192.168.11.114\\Datos David\\Karla";
+
 	private static final String logoLinux="/var/lib/sacod_reportgenerator/Guatex2.jpg";
 	private static final String logoWin="C:\\TEMPORAL\\imagenes\\Guatex2.jpg";
 	

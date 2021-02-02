@@ -20,7 +20,7 @@ public class Cliente {
 	private String noCuenta;
 
 	public Cliente(String codigo) {
-
+		this.codigo=codigo;
 	}
 
 	public Cliente(String nombre, String codigo, String direccion) {

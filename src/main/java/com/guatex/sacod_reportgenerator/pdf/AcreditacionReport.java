@@ -49,7 +49,7 @@ public class AcreditacionReport extends Pdf_Utils {
 		}
 	}
 
-	public boolean create(TableReport tbl, Cliente cliente, String idACH)
+	public boolean create(TableReport tbl, TableReport tbAjustes, Cliente cliente, String idACH, String totalisimo)
 			throws DocumentException, BadElementException, IOException, Exception {
 		try {
 			this.tbl = tbl;
@@ -72,8 +72,14 @@ public class AcreditacionReport extends Pdf_Utils {
 			document.add(getInfo(cliente, idACH));
 			document.add(getTablaNoBordes(3, 90, "Detalle de acreditamiento: , , ".split(","), boldFontTitleBig));
 			if (tbl != null) {
-				document.add(getResumen(tbl, width));
+				document.add(getResumen(tbl, width, totalisimo));
 				document.add(createTable(tbl, width));
+			}
+
+			if (tbAjustes != null) {
+				document.add(getTablaNoBordes(3, 90, "Detalle de ajustes: , , ".split(","), boldFontTitleBig));
+				document.add(getResumenAjs(tbAjustes, width));
+				document.add(createTableAjs(tbAjustes, width));
 			}
 			return true;
 		} catch (Exception e) {
@@ -88,7 +94,7 @@ public class AcreditacionReport extends Pdf_Utils {
 		}
 	}
 
-	public PdfPTable getResumen(Tabla tbl, int width) throws Exception {
+	public PdfPTable getResumen(Tabla tbl, int width, String totalisimo) throws Exception {
 		float widths[] = { 1, 1, 0.7f, 1, 2, 0.5f, 1, 0.5f, 1, 0.5f, 1 };
 		PdfPTable table = new PdfPTable(widths);
 		for (EncabezadoColumna ec : tbl.getEncabezados()) {
@@ -117,7 +123,13 @@ public class AcreditacionReport extends Pdf_Utils {
 					cValor.setBorderWidth(1.35f);
 					table.addCell(cValor);
 					String valor = tbl.getOperaciones().getValor(ec.getAtributoName());
-					cValor = nuevaCelda(numberFormat.format(Double.valueOf(valor)), 2, 1, normalFontTitleMedium);
+					if (ec.getAtributoName().equalsIgnoreCase("valorCred")) {
+						cValor = nuevaCelda(numberFormat.format(Double.valueOf(totalisimo)), 2, 1,
+								normalFontTitleMedium);
+					} else {
+						cValor = nuevaCelda(numberFormat.format(Double.valueOf(valor)), 2, 1, normalFontTitleMedium);
+					}
+
 					cValor.setBorder(2);
 					cValor.setBorderWidth(1.35f);
 					table.addCell(cValor);
@@ -140,6 +152,91 @@ public class AcreditacionReport extends Pdf_Utils {
 		float widths[] = { 1, 1, 0.7f, 1, 2, 0.5f, 1, 0.5f, 1, 0.5f, 1 };
 		PdfPTable table = new PdfPTable(widths);
 		table.setWidthPercentage(width);
+		table.setSpacingAfter(20f);
+		for (EncabezadoColumna ec : tbl.getEncabezados()) {
+			PdfPCell cellValue = nuevaCelda("	", 1, ec.isSumar() ? 2 : 1, normalFontSmall);
+			cellValue.setBorder(2);
+			table.addCell(cellValue);
+		}
+		for (Fila fl : tbl.getFilas()) {
+			for (EncabezadoColumna ec : tbl.getEncabezados()) {
+				String name = ec.getAtributoName();
+				String value = fl.findValue(name);
+				PdfPCell cellValue;
+				if (tbl.getOperaciones() != null && ec.isSumar()) {
+					table.addCell(nuevaCelda("Q", 2, 1, normalFontSmall));
+					cellValue = new PdfPCell();
+					Paragraph dato = new Paragraph(numberFormat.format(Double.valueOf(value)), normalFontSmallTbl);
+					dato.setAlignment(Element.ALIGN_RIGHT);
+					cellValue.addElement(dato);
+					cellValue.setBorder(0);
+					table.addCell(cellValue);
+				} else {
+					cellValue = nuevaCelda(value, Element.ALIGN_CENTER, normalFontSmall);
+					table.addCell(cellValue);
+				}
+			}
+		}
+		for (EncabezadoColumna ec : tbl.getEncabezados()) {
+			PdfPCell cellValue = nuevaCelda("	", 1, ec.isSumar() ? 2 : 1, normalFontSmallTbl);
+			cellValue.setBorder(1);
+			table.addCell(cellValue);
+		}
+		return table;
+	}
+
+	public PdfPTable getResumenAjs(Tabla tbl, int width) throws Exception {
+		float widths[] = { 1, 1, 0.7f, 1 };
+		PdfPTable table = new PdfPTable(widths);
+		for (EncabezadoColumna ec : tbl.getEncabezados()) {
+			PdfPCell cTempEtiqueta = nuevaCelda(ec.getNombre(), 1, ec.isSumar() ? 2 : 1, boldFontNormal);
+			cTempEtiqueta.setBorder(1);
+			cTempEtiqueta.setBorderWidth(1.35f);
+			table.addCell(cTempEtiqueta);
+		}
+		for (Fila fl : tbl.getFilas()) {
+			for (EncabezadoColumna ec : tbl.getEncabezados()) {
+				String name = ec.getAtributoName();
+				if (tbl.getOperaciones() != null && ec.isSumar()) {
+					tbl.getOperaciones().add(name, fl.getToDouble(name));
+				}
+			}
+		}
+		table.setWidthPercentage(60);
+		table.setPaddingTop(10f);
+		table.setSpacingAfter(30f);
+		if (tbl.getOperaciones() != null) {
+			for (EncabezadoColumna ec : tbl.getEncabezados()) {
+				PdfPCell cValor;
+				if (ec.isSumar()) {
+					cValor = nuevaCelda("Q", 2, 1, normalFontTitleMedium);
+					cValor.setBorder(2);
+					cValor.setBorderWidth(1.35f);
+					table.addCell(cValor);
+					String valor = tbl.getOperaciones().getValor(ec.getAtributoName());
+					cValor = nuevaCelda("", 2, 1, normalFontTitleMedium);
+					cValor.setBorder(2);
+					cValor.setBorderWidth(1.35f);
+					table.addCell(cValor);
+				} else {
+					cValor = nuevaCelda("	", 2, 1, normalFontTitleMedium);
+					cValor.setBorder(2);
+					cValor.setBorderWidth(1.35f);
+					table.addCell(cValor);
+				}
+
+			}
+		}
+		table.getDefaultCell().setBackgroundColor(GrayColor.GRAYWHITE);
+		table.getDefaultCell().setHorizontalAlignment(Element.ALIGN_CENTER);
+		table.getDefaultCell().setVerticalAlignment(Element.ALIGN_CENTER);
+		return table;
+	}
+
+	public PdfPTable createTableAjs(Tabla tbl, int width) throws Exception {
+		float widths[] = { 1, 1, 0.7f, 1 };
+		PdfPTable table = new PdfPTable(widths);
+		table.setWidthPercentage(60);
 		table.setSpacingAfter(20f);
 		for (EncabezadoColumna ec : tbl.getEncabezados()) {
 			PdfPCell cellValue = nuevaCelda("	", 1, ec.isSumar() ? 2 : 1, normalFontSmall);
